@@ -1,0 +1,66 @@
+name: DVA Slot Checker
+
+on:
+  schedule:
+    # Every 25 minutes, Mon-Sat 7am-5pm UK time (UTC+1 in summer / UTC in winter)
+    # Cron runs in UTC. UK summer (BST) = UTC+1, so 7am-5pm BST = 6am-4pm UTC
+    # Run at :00 and :25 and :50 past each hour, 06-16 UTC, Mon-Sat
+    - cron: '0,25,50 6-16 * * 1-6'
+
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  check-slots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Create config from secrets
+        run: |
+          cat > config.json << 'HEREDOC'
+          {
+              "dva_booking": {
+                  "url": "https://dva-bookings.nidirect.gov.uk/BookDriver/Driver/DriverSearch",
+                  "licence_number": "${{ secrets.DVA_LICENCE_NUMBER }}",
+                  "theory_cert_number": "${{ secrets.DVA_THEORY_CERT }}",
+                  "date_of_birth": "${{ secrets.DVA_DOB }}",
+                  "test_category": "B",
+                  "preferred_centres": ["HYDEBANK", "BALMORAL"],
+                  "earliest_date": "",
+                  "latest_date": ""
+              },
+              "schedule": {
+                  "check_interval_minutes": 25,
+                  "days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+                  "start_hour": 7,
+                  "end_hour": 17
+              },
+              "whatsapp": {
+                  "enabled": true,
+                  "provider": "twilio",
+                  "account_sid": "${{ secrets.TWILIO_ACCOUNT_SID }}",
+                  "auth_token": "${{ secrets.TWILIO_AUTH_TOKEN }}",
+                  "from_number": "whatsapp:+14155238886",
+                  "to_number": "whatsapp:${{ secrets.WHATSAPP_TO_NUMBER }}"
+              },
+              "notifications": {
+                  "desktop_alert": false,
+                  "sound_alert": false
+              }
+          }
+          HEREDOC
+
+      - name: Run slot checker
+        run: python checker.py
