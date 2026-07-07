@@ -99,7 +99,7 @@ Add these secrets:
 | Secret Name | Value | Example |
 |-------------|-------|---------|
 | `DVA_LICENCE_NUMBER` | Your 8-digit NI licence number | `42704812` |
-| `DVA_DOB` | Date of birth (DD/MM/YYYY) | `30/09/1989` |
+| `DVA_DOB` | Date of birth (DD/MM/YYYY) | `01/01/1990` |
 | `DVA_THEORY_CERT` | Theory test certificate number | `TC123456` |
 | `TWILIO_ACCOUNT_SID` | Twilio Account SID | `AC0b7e15...` |
 | `TWILIO_AUTH_TOKEN` | Twilio Auth Token | `5ca443b6...` |
