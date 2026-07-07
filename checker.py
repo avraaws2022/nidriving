@@ -54,7 +54,7 @@ class DVASlotChecker:
     def __init__(self, config):
         self.config = config
         self.dva = config["dva_booking"]
-        self.email_config = config["email"]
+        self.email_config = config.get("email", {"enabled": False})
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
