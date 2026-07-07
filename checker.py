@@ -445,6 +445,47 @@ class DVASlotChecker:
         except Exception as e:
             logger.error(f"WhatsApp alert failed: {e}")
 
+    def send_no_slots_message(self):
+        """Send a 'no slots' WhatsApp message to confirm checker is running."""
+        wa_config = self.config.get("whatsapp", {})
+        if not wa_config.get("enabled"):
+            return
+
+        message = (
+            f"DVA Check: NO SLOTS\n"
+            f"Centres: {', '.join(self.dva['preferred_centres'])}\n"
+            f"Checked: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
+            f"Next check in 25 min."
+        )
+
+        try:
+            account_sid = wa_config["account_sid"]
+            auth_token = wa_config["auth_token"]
+            from_number = wa_config["from_number"]
+            to_number = wa_config["to_number"]
+
+            url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
+
+            resp = requests.post(
+                url,
+                data={
+                    "From": from_number,
+                    "To": to_number,
+                    "Body": message
+                },
+                auth=(account_sid, auth_token),
+                timeout=30,
+                verify=False
+            )
+
+            if resp.status_code in (200, 201):
+                logger.info(f"No-slots message sent to {to_number}")
+            else:
+                logger.error(f"No-slots message failed: {resp.status_code} - {resp.text}")
+
+        except Exception as e:
+            logger.error(f"No-slots message failed: {e}")
+
     def run_check(self):
         """Run a single check cycle."""
         slots = self.check_available_slots()
@@ -455,7 +496,9 @@ class DVASlotChecker:
             self.send_email_alert(slots)
             self.send_desktop_alert(slots)
             return True
-        return False
+        else:
+            self.send_no_slots_message()
+            return False
 
 
 def is_within_schedule(config):

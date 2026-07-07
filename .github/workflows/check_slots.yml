@@ -2,9 +2,8 @@ name: DVA Slot Checker
 
 on:
   schedule:
-    # Every 25 minutes, Mon-Sat 7am-5pm UK time (UTC+1 in summer / UTC in winter)
-    # Cron runs in UTC. UK summer (BST) = UTC+1, so 7am-5pm BST = 6am-4pm UTC
-    # Run at :00 and :25 and :50 past each hour, 06-16 UTC, Mon-Sat
+    # Every 25 minutes, Mon-Sat 7am-5pm UK time (BST = UTC+1)
+    # Run at :00, :25, :50 past each hour, 06-16 UTC, Mon-Sat
     - cron: '0,25,50 6-16 * * 1-6'
 
   # Allow manual trigger for testing
@@ -22,45 +21,56 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: pip install requests beautifulsoup4
 
       - name: Create config from secrets
+        env:
+          DVA_LICENCE: ${{ secrets.DVA_LICENCE_NUMBER }}
+          DVA_THEORY: ${{ secrets.DVA_THEORY_CERT }}
+          DVA_DOB: ${{ secrets.DVA_DOB }}
+          TWILIO_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          WA_TO: ${{ secrets.WHATSAPP_TO_NUMBER }}
         run: |
-          cat > config.json << 'HEREDOC'
-          {
-              "dva_booking": {
-                  "url": "https://dva-bookings.nidirect.gov.uk/BookDriver/Driver/DriverSearch",
-                  "licence_number": "${{ secrets.DVA_LICENCE_NUMBER }}",
-                  "theory_cert_number": "${{ secrets.DVA_THEORY_CERT }}",
-                  "date_of_birth": "${{ secrets.DVA_DOB }}",
-                  "test_category": "B",
-                  "preferred_centres": ["HYDEBANK", "BALMORAL"],
-                  "earliest_date": "",
-                  "latest_date": ""
+          python -c "
+          import json, os
+          config = {
+              'dva_booking': {
+                  'url': 'https://dva-bookings.nidirect.gov.uk/BookDriver/Driver/DriverSearch',
+                  'licence_number': os.environ['DVA_LICENCE'],
+                  'theory_cert_number': os.environ['DVA_THEORY'],
+                  'date_of_birth': os.environ['DVA_DOB'],
+                  'test_category': 'B',
+                  'preferred_centres': ['HYDEBANK', 'BALMORAL'],
+                  'earliest_date': '',
+                  'latest_date': ''
               },
-              "schedule": {
-                  "check_interval_minutes": 25,
-                  "days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
-                  "start_hour": 7,
-                  "end_hour": 17
+              'schedule': {
+                  'check_interval_minutes': 25,
+                  'days': ['monday','tuesday','wednesday','thursday','friday','saturday'],
+                  'start_hour': 7,
+                  'end_hour': 17
               },
-              "whatsapp": {
-                  "enabled": true,
-                  "provider": "twilio",
-                  "account_sid": "${{ secrets.TWILIO_ACCOUNT_SID }}",
-                  "auth_token": "${{ secrets.TWILIO_AUTH_TOKEN }}",
-                  "from_number": "whatsapp:+14155238886",
-                  "to_number": "whatsapp:${{ secrets.WHATSAPP_TO_NUMBER }}"
+              'whatsapp': {
+                  'enabled': True,
+                  'provider': 'twilio',
+                  'account_sid': os.environ['TWILIO_SID'],
+                  'auth_token': os.environ['TWILIO_TOKEN'],
+                  'from_number': 'whatsapp:+14155238886',
+                  'to_number': 'whatsapp:' + os.environ['WA_TO']
               },
-              "notifications": {
-                  "desktop_alert": false,
-                  "sound_alert": false
+              'notifications': {
+                  'desktop_alert': False,
+                  'sound_alert': False
               }
           }
-          HEREDOC
+          with open('config.json', 'w') as f:
+              json.dump(config, f, indent=2)
+          print('Config created successfully')
+          "
 
       - name: Run slot checker
         run: python checker.py
