@@ -103,7 +103,7 @@ Add these secrets:
 | `DVA_THEORY_CERT` | Theory test certificate number | `TC123456` |
 | `TWILIO_ACCOUNT_SID` | Twilio Account SID | `AC0b7e15...` |
 | `TWILIO_AUTH_TOKEN` | Twilio Auth Token | `5ca443b6...` |
-| `WHATSAPP_TO_NUMBER` | Your phone with country code | `+447469436116` |
+| `WHATSAPP_TO_NUMBER` | Your phone with country code | `+XXXXXXXXXXXX` |
 
 ### Step 4: Activate
 
